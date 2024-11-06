@@ -1,5 +1,8 @@
 import com.scanner.buildscr.AppConfig
 import com.scanner.buildscr.AppConfig.Version
+import org.gradle.kotlin.dsl.androidTestImplementation
+import org.gradle.kotlin.dsl.debugImplementation
+import org.gradle.kotlin.dsl.testImplementation
 
 plugins {
     alias(libs.plugins.android.application)
@@ -18,23 +21,26 @@ android {
         targetSdk = Version.TARGET_SDK
         versionCode = 1
         versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
-
     compileOptions {
         sourceCompatibility = Version.JVM
         targetCompatibility = Version.JVM
     }
-
     kotlinOptions {
         jvmTarget = Version.JVM.toString()
     }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -47,7 +53,11 @@ kotlin {
 
 dependencies {
     implementation(projects.scanlibrary)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.implementation.core)
+    implementation(libs.bundles.implementation.compose)
+    testImplementation(libs.bundles.testImplementation)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.bundles.androidTestImplementation)
+    debugImplementation(libs.bundles.debugImplementation)
 }

@@ -18,12 +18,11 @@ ksp = "2.0.21-1.0.26"
 lifecycleRuntimeKtx = "2.8.7"
 material = "1.12.0"
 mockk = "1.13.12"
-navigation = "2.7.7"
+navigation = "2.8.3"
 opencv = "4.10.0"
 permissions = "2.0.0"
 robolectric = "4.13"
 splashScreen = "1.2.0-alpha02"
-subsamplingScaleImageView = "3.10.0"
 timber = "5.0.1"
 ui = "1.7.5"
 version-catalog-update = "0.8.5"
@@ -61,7 +60,6 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 opencv = { module = "org.opencv:opencv", version.ref = "opencv" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-subsampling-scale-image-view = { module = "com.davemorrissey.labs:subsampling-scale-image-view", version.ref = "subsamplingScaleImageView" }
 utils-timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 [plugins]
@@ -103,6 +101,7 @@ implementation-core = [
     "androidx-lifecycle-runtime-ktx",
     "androidx-splashScreen",
     "camera",
+    "camera-view",
     "camera-lifecycle",
 ]
 testImplementation = [

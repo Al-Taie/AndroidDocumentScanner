@@ -22,5 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DocumentScanner"
-include(":app", ":scanlibrary")
+rootProject.name = "AndroidDocumentScanner"
+include(":app")
+include(":scanlibrary")

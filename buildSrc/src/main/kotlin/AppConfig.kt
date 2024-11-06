@@ -8,7 +8,7 @@ object AppConfig {
     const val IS_RELEASE_MODE_DEBUGGABLE: Boolean = false
 
     object Version {
-        const val MIN_SDK = 21
+        const val MIN_SDK = 26
         const val TARGET_SDK = 34
         const val COMPILE_SDK = 35
         val JVM = JavaVersion.VERSION_17
@@ -17,7 +17,7 @@ object AppConfig {
     }
 
     private const val GROUP_ID = "com.scanner"
-    private const val APPLICATION_ID_SUFFIX = "demo"
+    private const val APPLICATION_ID_SUFFIX = "app"
     private const val LIBRARY_ID_SUFFIX = "library"
     const val APPLICATION_ID = "${GROUP_ID}.${APPLICATION_ID_SUFFIX}"
     const val LIBRARY_ID = "${GROUP_ID}.${LIBRARY_ID_SUFFIX}"
