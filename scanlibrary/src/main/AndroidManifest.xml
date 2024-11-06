@@ -8,30 +8,4 @@
         tools:ignore="GradleOverrides,OldTargetApi" />
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32"
-        tools:ignore="ScopedStorage" />
-    <application
-        android:allowBackup="true"
-        android:largeHeap="true"
-        android:hardwareAccelerated="true"
-        android:label="@string/app_name" >
-        <activity
-            android:name=".Scanner"
-            android:configChanges="orientation|screenSize">
-        </activity>
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="com.scanlibrary.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths"/>
-        </provider>
-    </application>
-
 </manifest>
