@@ -1,5 +1,6 @@
 import com.scanner.buildscr.AppConfig
 import com.scanner.buildscr.AppConfig.Version
+import org.gradle.kotlin.dsl.implementation
 
 plugins {
     alias(libs.plugins.android.library)
@@ -63,7 +64,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    api(libs.subsampling.scale.image.view)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.implementation.core)
+    implementation(libs.bundles.implementation.compose)
     api(libs.opencv)
-    implementation(libs.androidx.exifinterface)
 }
