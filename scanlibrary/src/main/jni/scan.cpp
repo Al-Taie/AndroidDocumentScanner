@@ -23,94 +23,52 @@ double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
            sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
 }
 
-vector <Point> getPoints(Mat image) {
-    int width = image.size().width;
-    int height = image.size().height;
-    Mat image_proc = image.clone();
-    vector <vector<Point>> squares;
-    // blur will enhance edge detection
-    Mat blurred(image_proc);
-    medianBlur(image_proc, blurred, 9);
+// Enhanced findLargestSquare function
+vector <Point>
+findLargestSquare(Mat image, double minArea = 1000.0, double maxAspectRatioDiff = 0.3) {
+    Mat gray, blurred, edged;
 
-    Mat gray0(blurred.size(), CV_8U), gray;
+    cvtColor(image, gray, COLOR_BGR2GRAY);
+    GaussianBlur(gray, blurred, Size(5, 5), 0);
+    Canny(blurred, edged, 75, 200);
+
     vector <vector<Point>> contours;
+    findContours(edged, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
-    // find squares in every color plane of the image
-    for (int c = 0; c < 3; c++) {
-        int ch[] = {c, 0};
-        mixChannels(&blurred, 1, &gray0, 1, ch, 1);
+    vector <Point> largestSquare;
+    double maxArea = 0;
 
-        // try several threshold levels
-        const int threshold_level = 2;
-        for (int l = 0; l < threshold_level; l++) {
-            // Use Canny instead of zero threshold level!
-            // Canny helps to catch squares with gradient shading
-            if (l == 0) {
-                Canny(gray0, gray, 10, 20, 3); //
+    for (const auto &contour: contours) {
+        vector <Point> approx;
+        approxPolyDP(contour, approx, arcLength(contour, true) * 0.02, true);
 
-                // Dilate helps to remove potential holes between edge segments
-                dilate(gray, gray, Mat(), Point(-1, -1));
-            } else {
-                gray = gray0 >= (l + 1) * 255 / threshold_level;
+        if (approx.size() == 4 && isContourConvex(approx) && contourArea(approx) > minArea) {
+            double maxCosine = 0;
+            for (int j = 2; j < 5; j++) {
+                double cosine = fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
+                maxCosine = MAX(maxCosine, cosine);
             }
 
-            // Find contours and store them in a list
-            findContours(gray, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-
-            // Test contours
-            vector <Point> approx;
-            for (size_t i = 0; i < contours.size(); i++) {
-                // approximate contour with accuracy proportional
-                // to the contour perimeter
-                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.02,
-                             true);
-
-                // Note: absolute value of an area is used because
-                // area may be positive or negative - in accordance with the
-                // contour orientation
-                if (approx.size() == 4 &&
-                    fabs(contourArea(Mat(approx))) > 1000 &&
-                    isContourConvex(Mat(approx))) {
-                    double maxCosine = 0;
-
-                    for (int j = 2; j < 5; j++) {
-                        double cosine = fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
-                        maxCosine = MAX(maxCosine, cosine);
-                    }
-
-                    if (maxCosine < 0.3)
-                        squares.push_back(approx);
+            if (maxCosine < maxAspectRatioDiff) {
+                double area = contourArea(approx);
+                if (area > maxArea) {
+                    maxArea = area;
+                    largestSquare = approx;
                 }
             }
         }
+    }
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning size() %zu", largestSquare.size());
 
-        double largest_area = -1;
-        int largest_contour_index = 0;
-        for (int i = 0; i < squares.size(); i++) {
-            double a = contourArea(squares[i], false);
-            if (a > largest_area) {
-                largest_area = a;
-                largest_contour_index = i;
-            }
-        }
-
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning size() %zu", squares.size());
-        vector <Point> points;
-        if (squares.size() > 0) {
-            points = squares[largest_contour_index];
-        } else {
-            points.push_back(Point(0, 0));
-            points.push_back(Point(width, 0));
-            points.push_back(Point(0, height));
-            points.push_back(Point(width, height));
-        }
-
-        return points;
+    if (largestSquare.empty()) {
+        int width = image.cols;
+        int height = image.rows;
+        return {Point(0, 0), Point(width, 0), Point(0, height), Point(width, height)};
     }
 
-    // Default return statement to ensure all paths return a vector<Point>
-    return vector < Point > {Point(0, 0), Point(width, 0), Point(0, height), Point(width, height)};
+    return largestSquare;
 }
+
 
 Point2f computePoint(int p1, int p2) {
     Point2f pt;
@@ -121,17 +79,15 @@ Point2f computePoint(int p1, int p2) {
 
 Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat y3, jfloat x4,
          jfloat y4) {
-
     __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning scan() %f", x1);
-    // define the destination image size:
 
-    float w1 = sqrt(pow(x4 - x3, 2) + pow(x4 - x3, 2));
-    float w2 = sqrt(pow(x2 - x1, 2) + pow(x2 - x1, 2));
-    float h1 = sqrt(pow(y2 - y4, 2) + pow(y2 - y4, 2));
-    float h2 = sqrt(pow(y1 - y3, 2) + pow(y1 - y3, 2));
+    float w1 = sqrt(pow(x4 - x3, 2) + pow(y4 - y3, 2));
+    float w2 = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+    float h1 = sqrt(pow(y2 - y4, 2) + pow(x2 - x4, 2));
+    float h2 = sqrt(pow(y1 - y3, 2) + pow(x1 - x3, 2));
 
-    float maxWidth = (w1 < w2) ? w1 : w2;
-    float maxHeight = (h1 < h2) ? h1 : h2;
+    float maxWidth = max(w1, w2);
+    float maxHeight = max(h1, h2);
 
     Mat dst = Mat::zeros(maxHeight, maxWidth, CV_8UC3);
 
@@ -413,9 +369,8 @@ JNICALL Java_com_scanner_library_NativeScanner_getPoints
                             "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
-    // init our output image
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
-    vector <Point> img_pts = getPoints(mbgra);
+    vector <Point> img_pts = findLargestSquare(mbgra);
 
     jfloatArray jArray = env->NewFloatArray(8);
 
