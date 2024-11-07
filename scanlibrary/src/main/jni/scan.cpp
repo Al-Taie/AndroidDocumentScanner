@@ -8,78 +8,73 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
 #include <android/bitmap.h>
+
 #define APP_NAME "Scanning"
 using namespace cv;
 using namespace std;
 
-double angle( cv::Point pt1, cv::Point pt2, cv::Point pt0 ) {
+// Helper function to calculate angle between three points
+double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
     double dx1 = pt1.x - pt0.x;
     double dy1 = pt1.y - pt0.y;
     double dx2 = pt2.x - pt0.x;
     double dy2 = pt2.y - pt0.y;
-    return (dx1*dx2 + dy1*dy2)/sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2) + 1e-10);
+    return (dx1 * dx2 + dy1 * dy2) /
+           sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
 }
 
-vector<Point> getPoints(Mat image)
-{
+vector <Point> getPoints(Mat image) {
     int width = image.size().width;
     int height = image.size().height;
     Mat image_proc = image.clone();
-    vector<vector<Point> > squares;
+    vector <vector<Point>> squares;
     // blur will enhance edge detection
     Mat blurred(image_proc);
     medianBlur(image_proc, blurred, 9);
 
     Mat gray0(blurred.size(), CV_8U), gray;
-    vector<vector<Point> > contours;
+    vector <vector<Point>> contours;
 
     // find squares in every color plane of the image
-    for (int c = 0; c < 3; c++)
-    {
+    for (int c = 0; c < 3; c++) {
         int ch[] = {c, 0};
         mixChannels(&blurred, 1, &gray0, 1, ch, 1);
 
         // try several threshold levels
         const int threshold_level = 2;
-        for (int l = 0; l < threshold_level; l++)
-        {
+        for (int l = 0; l < threshold_level; l++) {
             // Use Canny instead of zero threshold level!
             // Canny helps to catch squares with gradient shading
-            if (l == 0)
-            {
+            if (l == 0) {
                 Canny(gray0, gray, 10, 20, 3); //
 
                 // Dilate helps to remove potential holes between edge segments
-                dilate(gray, gray, Mat(), Point(-1,-1));
-            }
-            else
-            {
-                gray = gray0 >= (l+1) * 255 / threshold_level;
+                dilate(gray, gray, Mat(), Point(-1, -1));
+            } else {
+                gray = gray0 >= (l + 1) * 255 / threshold_level;
             }
 
             // Find contours and store them in a list
             findContours(gray, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
             // Test contours
-            vector<Point> approx;
-            for (size_t i = 0; i < contours.size(); i++)
-            {
+            vector <Point> approx;
+            for (size_t i = 0; i < contours.size(); i++) {
                 // approximate contour with accuracy proportional
                 // to the contour perimeter
-                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
+                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.02,
+                             true);
 
                 // Note: absolute value of an area is used because
                 // area may be positive or negative - in accordance with the
                 // contour orientation
                 if (approx.size() == 4 &&
                     fabs(contourArea(Mat(approx))) > 1000 &&
-                    isContourConvex(Mat(approx)))
-                {
+                    isContourConvex(Mat(approx))) {
                     double maxCosine = 0;
 
-                    for (int j = 2; j < 5; j++)
-                    {
-                        double cosine = fabs(angle(approx[j%4], approx[j-2], approx[j-1]));
+                    for (int j = 2; j < 5; j++) {
+                        double cosine = fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
                         maxCosine = MAX(maxCosine, cosine);
                     }
 
@@ -91,24 +86,19 @@ vector<Point> getPoints(Mat image)
 
         double largest_area = -1;
         int largest_contour_index = 0;
-        for(int i = 0; i < squares.size(); i++)
-        {
+        for (int i = 0; i < squares.size(); i++) {
             double a = contourArea(squares[i], false);
-            if(a > largest_area)
-            {
+            if (a > largest_area) {
                 largest_area = a;
                 largest_contour_index = i;
             }
         }
 
         __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning size() %zu", squares.size());
-        vector<Point> points;
-        if(squares.size() > 0)
-        {
+        vector <Point> points;
+        if (squares.size() > 0) {
             points = squares[largest_contour_index];
-        }
-        else
-        {
+        } else {
             points.push_back(Point(0, 0));
             points.push_back(Point(width, 0));
             points.push_back(Point(0, height));
@@ -119,7 +109,7 @@ vector<Point> getPoints(Mat image)
     }
 
     // Default return statement to ensure all paths return a vector<Point>
-    return vector<Point> { Point(0, 0), Point(width, 0), Point(0, height), Point(width, height) };
+    return vector < Point > {Point(0, 0), Point(width, 0), Point(0, height), Point(width, height)};
 }
 
 Point2f computePoint(int p1, int p2) {
@@ -129,15 +119,16 @@ Point2f computePoint(int p1, int p2) {
     return pt;
 }
 
-Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat y3, jfloat x4, jfloat y4) {
+Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat y3, jfloat x4,
+         jfloat y4) {
 
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning scan() %f",x1);
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning scan() %f", x1);
     // define the destination image size:
 
-    float w1 = sqrt( pow(x4 - x3 , 2) + pow(x4 - x3, 2));
-    float w2 = sqrt( pow(x2 - x1 , 2) + pow(x2-x1, 2));
-    float h1 = sqrt( pow(y2 - y4 , 2) + pow(y2 - y4, 2));
-    float h2 = sqrt( pow(y1 - y3 , 2) + pow(y1-y3, 2));
+    float w1 = sqrt(pow(x4 - x3, 2) + pow(x4 - x3, 2));
+    float w2 = sqrt(pow(x2 - x1, 2) + pow(x2 - x1, 2));
+    float h1 = sqrt(pow(y2 - y4, 2) + pow(y2 - y4, 2));
+    float h2 = sqrt(pow(y1 - y3, 2) + pow(y1 - y3, 2));
 
     float maxWidth = (w1 < w2) ? w1 : w2;
     float maxHeight = (h1 < h2) ? h1 : h2;
@@ -145,16 +136,16 @@ Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat 
     Mat dst = Mat::zeros(maxHeight, maxWidth, CV_8UC3);
 
     // corners of destination image with the sequence [tl, tr, bl, br]
-    vector<Point2f> dst_pts, img_pts;
+    vector <Point2f> dst_pts, img_pts;
     dst_pts.push_back(Point(0, 0));
     dst_pts.push_back(Point(maxWidth - 1, 0));
     dst_pts.push_back(Point(0, maxHeight - 1));
     dst_pts.push_back(Point(maxWidth - 1, maxHeight - 1));
 
-    img_pts.push_back(computePoint(x1,y1));
-    img_pts.push_back(computePoint(x2,y2));
-    img_pts.push_back(computePoint(x3,y3));
-    img_pts.push_back(computePoint(x4,y4));
+    img_pts.push_back(computePoint(x1, y1));
+    img_pts.push_back(computePoint(x2, y2));
+    img_pts.push_back(computePoint(x3, y3));
+    img_pts.push_back(computePoint(x4, y4));
 
     // get transformation matrix
     Mat transmtx = getPerspectiveTransform(img_pts, dst_pts);
@@ -164,54 +155,56 @@ Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat 
     return dst;
 }
 
-jobject mat_to_bitmap(JNIEnv * env, Mat & src, bool needPremultiplyAlpha, jobject bitmap_config){
-    jclass java_bitmap_class = (jclass)env->FindClass("android/graphics/Bitmap");
+jobject mat_to_bitmap(JNIEnv *env, Mat &src, bool needPremultiplyAlpha, jobject bitmap_config) {
+    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
     jmethodID mid = env->GetStaticMethodID(java_bitmap_class,
-                                           "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+                                           "createBitmap",
+                                           "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
 
     jobject bitmap = env->CallStaticObjectMethod(java_bitmap_class,
-                                                 mid, src.size().width, src.size().height, bitmap_config);
-    AndroidBitmapInfo  info;
-    void*              pixels = 0;
+                                                 mid, src.size().width, src.size().height,
+                                                 bitmap_config);
+    AndroidBitmapInfo info;
+    void *pixels = 0;
 
     try {
         CV_Assert(AndroidBitmap_getInfo(env, bitmap, &info) >= 0);
         CV_Assert(src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4);
         CV_Assert(AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0);
         CV_Assert(pixels);
-        if(info.format == ANDROID_BITMAP_FORMAT_RGBA_8888){
+        if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
             Mat tmp(info.height, info.width, CV_8UC4, pixels);
-            if(src.type() == CV_8UC1){
+            if (src.type() == CV_8UC1) {
                 cvtColor(src, tmp, CV_GRAY2RGBA);
-            }else if(src.type() == CV_8UC3){
+            } else if (src.type() == CV_8UC3) {
                 cvtColor(src, tmp, CV_RGB2RGBA);
-            }else if(src.type() == CV_8UC4){
-                if(needPremultiplyAlpha){
+            } else if (src.type() == CV_8UC4) {
+                if (needPremultiplyAlpha) {
                     cvtColor(src, tmp, COLOR_RGBA2mRGBA);
-                }else{
+                } else {
                     src.copyTo(tmp);
                 }
             }
-        }else{
+        } else {
             // info.format == ANDROID_BITMAP_FORMAT_RGB_565
             Mat tmp(info.height, info.width, CV_8UC2, pixels);
-            if(src.type() == CV_8UC1){
+            if (src.type() == CV_8UC1) {
                 cvtColor(src, tmp, CV_GRAY2BGR565);
-            }else if(src.type() == CV_8UC3){
+            } else if (src.type() == CV_8UC3) {
                 cvtColor(src, tmp, CV_RGB2BGR565);
-            }else if(src.type() == CV_8UC4){
+            } else if (src.type() == CV_8UC4) {
                 cvtColor(src, tmp, CV_RGBA2BGR565);
             }
         }
         AndroidBitmap_unlockPixels(env, bitmap);
         return bitmap;
-    }catch(cv::Exception e){
+    } catch (cv::Exception e) {
         AndroidBitmap_unlockPixels(env, bitmap);
         jclass je = env->FindClass("org/opencv/core/CvException");
-        if(!je) je = env->FindClass("java/lang/Exception");
+        if (!je) je = env->FindClass("java/lang/Exception");
         env->ThrowNew(je, e.what());
         return bitmap;
-    }catch (...){
+    } catch (...) {
         AndroidBitmap_unlockPixels(env, bitmap);
         jclass je = env->FindClass("java/lang/Exception");
         env->ThrowNew(je, "Unknown exception in JNI code {nMatToBitmap}");
@@ -219,62 +212,70 @@ jobject mat_to_bitmap(JNIEnv * env, Mat & src, bool needPremultiplyAlpha, jobjec
     }
 }
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
-(JNIEnv *env, jobject thiz, jobject bitmap,jfloat x1,jfloat y1,jfloat x2, jfloat y2, jfloat x3,jfloat y3,jfloat x4,jfloat y4)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning getString");
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
+        (JNIEnv *env, jobject thiz, jobject bitmap, jfloat x1, jfloat y1, jfloat x2, jfloat y2,
+         jfloat x3, jfloat y3, jfloat x4, jfloat y4) {
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getString");
     int ret;
     AndroidBitmapInfo info;
-    void* pixels = 0;
+    void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_getInfo() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
         return NULL;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 )
-    {       __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"Bitmap format is not RGBA_8888!");
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_lockPixels() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
     // init our output image
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
-    Mat dst = scan(mbgra,x1,y1,x2,y2,x3,y3,x4,y4);
+    Mat dst = scan(mbgra, x1, y1, x2, y2, x3, y3, x4, y4);
 
     //get source bitmap's config
-    jclass java_bitmap_class = (jclass)env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = mat_to_bitmap(env,dst,false,bitmap_config);
+    jobject _bitmap = mat_to_bitmap(env, dst, false, bitmap_config);
 
     AndroidBitmap_unlockPixels(env, bitmap);
     return _bitmap;
 }
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
-(JNIEnv *env, jobject thiz,jobject bitmap)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning getMagicColorBitmap");
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
+        (JNIEnv *env, jobject thiz, jobject bitmap) {
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getMagicColorBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void* pixels = 0;
+    void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_getInfo() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
         return NULL;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 )
-    {       __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"Bitmap format is not RGBA_8888!");
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_lockPixels() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
@@ -285,36 +286,40 @@ JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBi
     dst.convertTo(dst, -1, alpha, beta);
 
     //get source bitmap's config
-    jclass java_bitmap_class = (jclass)env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = mat_to_bitmap(env,dst,false,bitmap_config);
+    jobject _bitmap = mat_to_bitmap(env, dst, false, bitmap_config);
 
     AndroidBitmap_unlockPixels(env, bitmap);
     return _bitmap;
 
 }
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
-(JNIEnv *env, jobject thiz,jobject bitmap)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning getBWBitmap");
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
+        (JNIEnv *env, jobject thiz, jobject bitmap) {
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getBWBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void* pixels = 0;
+    void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_getInfo() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
         return NULL;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 )
-    {       __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"Bitmap format is not RGBA_8888!");
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_lockPixels() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
@@ -326,40 +331,44 @@ JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
 //    float beta = 0;
 //    dst.convertTo(dst, -1, alpha, beta);
 
-    threshold(dst,dst,0,255,THRESH_BINARY | THRESH_OTSU);
+    threshold(dst, dst, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
 
     //get source bitmap's config
-    jclass java_bitmap_class = (jclass)env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = mat_to_bitmap(env,dst,false,bitmap_config);
+    jobject _bitmap = mat_to_bitmap(env, dst, false, bitmap_config);
 
     AndroidBitmap_unlockPixels(env, bitmap);
     return _bitmap;
 
 }
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
-(JNIEnv *env, jobject thiz,jobject bitmap)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning getGrayBitmap");
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
+        (JNIEnv *env, jobject thiz, jobject bitmap) {
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getGrayBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void* pixels = 0;
+    void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_getInfo() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
         return NULL;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 )
-    {       __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"Bitmap format is not RGBA_8888!");
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_lockPixels() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
@@ -369,49 +378,51 @@ JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
     cvtColor(mbgra, dst, CV_BGR2GRAY);
 
     //get source bitmap's config
-    jclass java_bitmap_class = (jclass)env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = mat_to_bitmap(env,dst,false,bitmap_config);
+    jobject _bitmap = mat_to_bitmap(env, dst, false, bitmap_config);
 
     AndroidBitmap_unlockPixels(env, bitmap);
     return _bitmap;
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_scanner_library_NativeScanner_getPoints
-(JNIEnv *env, jobject thiz,jobject bitmap)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scaning getPoints");
+JNIEXPORT jfloatArray
+
+JNICALL Java_com_scanner_library_NativeScanner_getPoints
+        (JNIEnv *env, jobject thiz, jobject bitmap) {
+    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getPoints");
     int ret;
     AndroidBitmapInfo info;
-    void* pixels = 0;
+    void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_getInfo() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
         return 0;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 )
-    {       __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"Bitmap format is not RGBA_8888!");
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
         return 0;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,"AndroidBitmap_lockPixels() failed ! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
+                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
     }
 
     // init our output image
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
-    vector<Point> img_pts = getPoints(mbgra);
+    vector <Point> img_pts = getPoints(mbgra);
 
     jfloatArray jArray = env->NewFloatArray(8);
 
-    if (jArray != NULL)
-    {
+    if (jArray != NULL) {
         jfloat *ptr = env->GetFloatArrayElements(jArray, NULL);
 
-        for (int i=0,j=i+4; j<8; i++,j++)
-        {
+        for (int i = 0, j = i + 4; j < 8; i++, j++) {
             ptr[i] = img_pts[i].x;
             ptr[j] = img_pts[i].y;
         }
