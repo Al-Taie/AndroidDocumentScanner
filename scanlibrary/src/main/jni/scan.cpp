@@ -65,50 +65,7 @@ findLargestSquare(Mat image, double minArea = 1000.0, double maxAspectRatioDiff 
         int height = image.rows;
         return {Point(0, 0), Point(width, 0), Point(0, height), Point(width, height)};
     }
-
     return largestSquare;
-}
-
-
-Point2f computePoint(int p1, int p2) {
-    Point2f pt;
-    pt.x = p1;
-    pt.y = p2;
-    return pt;
-}
-
-Mat scan(Mat img, jfloat x1, jfloat y1, jfloat x2, jfloat y2, jfloat x3, jfloat y3, jfloat x4,
-         jfloat y4) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning scan() %f", x1);
-
-    float w1 = sqrt(pow(x4 - x3, 2) + pow(y4 - y3, 2));
-    float w2 = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
-    float h1 = sqrt(pow(y2 - y4, 2) + pow(x2 - x4, 2));
-    float h2 = sqrt(pow(y1 - y3, 2) + pow(x1 - x3, 2));
-
-    float maxWidth = max(w1, w2);
-    float maxHeight = max(h1, h2);
-
-    Mat dst = Mat::zeros(maxHeight, maxWidth, CV_8UC3);
-
-    // corners of destination image with the sequence [tl, tr, bl, br]
-    vector <Point2f> dst_pts, img_pts;
-    dst_pts.push_back(Point(0, 0));
-    dst_pts.push_back(Point(maxWidth - 1, 0));
-    dst_pts.push_back(Point(0, maxHeight - 1));
-    dst_pts.push_back(Point(maxWidth - 1, maxHeight - 1));
-
-    img_pts.push_back(computePoint(x1, y1));
-    img_pts.push_back(computePoint(x2, y2));
-    img_pts.push_back(computePoint(x3, y3));
-    img_pts.push_back(computePoint(x4, y4));
-
-    // get transformation matrix
-    Mat transmtx = getPerspectiveTransform(img_pts, dst_pts);
-    // apply perspective transformation
-    warpPerspective(img, dst, transmtx, dst.size());
-
-    return dst;
 }
 
 jobject mat_to_bitmap(JNIEnv *env, Mat &src, bool needPremultiplyAlpha, jobject bitmap_config) {
@@ -154,7 +111,7 @@ jobject mat_to_bitmap(JNIEnv *env, Mat &src, bool needPremultiplyAlpha, jobject 
         }
         AndroidBitmap_unlockPixels(env, bitmap);
         return bitmap;
-    } catch (cv::Exception e) {
+    } catch (Exception e) {
         AndroidBitmap_unlockPixels(env, bitmap);
         jclass je = env->FindClass("org/opencv/core/CvException");
         if (!je) je = env->FindClass("java/lang/Exception");
@@ -170,45 +127,65 @@ jobject mat_to_bitmap(JNIEnv *env, Mat &src, bool needPremultiplyAlpha, jobject 
 
 JNIEXPORT jobject
 
-JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
-        (JNIEnv *env, jobject thiz, jobject bitmap, jfloat x1, jfloat y1, jfloat x2, jfloat y2,
+JNICALL
+Java_com_scanner_library_NativeScanner_getScannedBitmap
+        (JNIEnv *env, jobject thiz, jobject bitmap,
+         jfloat x1, jfloat y1, jfloat x2, jfloat y2,
          jfloat x3, jfloat y3, jfloat x4, jfloat y4) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getString");
-    int ret;
     AndroidBitmapInfo info;
-    void *pixels = 0;
-
-    if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
-                            "AndroidBitmap_getInfo() failed ! error=%d", ret);
+    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
+        __android_log_print(ANDROID_LOG_ERROR, APP_NAME, "Failed to get bitmap info.");
         return NULL;
     }
 
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
+    void *pixels = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
+        __android_log_print(ANDROID_LOG_ERROR, APP_NAME, "Failed to lock pixels.");
         return NULL;
     }
 
-    if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME,
-                            "AndroidBitmap_lockPixels() failed ! error=%d", ret);
-    }
-
-    // init our output image
+    // Create a Mat from the bitmap
     Mat mbgra(info.height, info.width, CV_8UC4, pixels);
-    Mat dst = scan(mbgra, x1, y1, x2, y2, x3, y3, x4, y4);
 
-    //get source bitmap's config
-    jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
-                                     "()Landroid/graphics/Bitmap$Config;");
-    jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = mat_to_bitmap(env, dst, false, bitmap_config);
+    // Define source points (ensure correct order: top-left, top-right, bottom-right, bottom-left)
+    vector <Point2f> src_points = {
+            Point2f(x1, y1),
+            Point2f(x2, y2),
+            Point2f(x3, y3),
+            Point2f(x4, y4)
+    };
+
+    // Define destination points based on calculated or approximate width/height
+    float width = norm(src_points[0] - src_points[1]);
+    float height = norm(src_points[0] - src_points[3]);
+
+    vector <Point2f> dst_points = {
+            Point2f(0, 0),
+            Point2f(width, 0),
+            Point2f(width, height),
+            Point2f(0, height)
+    };
+
+    // Get perspective transform and warp image with better interpolation
+    Mat transform_matrix = getPerspectiveTransform(src_points, dst_points);
+    Mat cropped_image;
+
+    // Use INTER_LANCZOS4 for better quality during perspective transformation
+    warpPerspective(mbgra, cropped_image, transform_matrix, Size(width, height), INTER_LANCZOS4);
 
     AndroidBitmap_unlockPixels(env, bitmap);
-    return _bitmap;
+
+    // Convert high-res Mat back to Bitmap
+    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
+    jmethodID getConfig = env->GetMethodID(bitmapClass, "getConfig",
+                                           "()Landroid/graphics/Bitmap$Config;");
+    jobject bitmapConfig = env->CallObjectMethod(bitmap, getConfig);
+
+    jobject result_bitmap = mat_to_bitmap(env, high_res_image, false, bitmapConfig);
+    return result_bitmap;
 }
 
+extern "C"
 JNIEXPORT jobject
 
 JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
@@ -250,9 +227,9 @@ JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
 
     AndroidBitmap_unlockPixels(env, bitmap);
     return _bitmap;
-
 }
 
+extern "C"
 JNIEXPORT jobject
 
 JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
@@ -283,9 +260,9 @@ JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
     Mat dst = mbgra.clone();
 
     cvtColor(mbgra, dst, CV_BGR2GRAY);
-//    float alpha = 2.2;
-//    float beta = 0;
-//    dst.convertTo(dst, -1, alpha, beta);
+    float alpha = 2.2;
+    float beta = 0;
+    dst.convertTo(dst, -1, alpha, beta);
 
     threshold(dst, dst, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
@@ -302,6 +279,7 @@ JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
 
 }
 
+extern "C"
 JNIEXPORT jobject
 
 JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
@@ -344,6 +322,7 @@ JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
     return _bitmap;
 }
 
+extern "C"
 JNIEXPORT jfloatArray
 
 JNICALL Java_com_scanner_library_NativeScanner_getPoints

@@ -62,22 +62,32 @@ extern "C" {
  * Method:    getScannedBitmap
  * Signature: (IILandroid/graphics/Bitmap;FFFFFFFF)Landroid/graphics/Bitmap;
  */
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
-  (JNIEnv *, jobject, jobject, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
+        (JNIEnv *, jobject, jobject,
+         jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
 
-JNIEXPORT jfloatArray JNICALL Java_com_scanner_library_NativeScanner_getPoints
-(JNIEnv *, jobject, jobject);
+JNIEXPORT jfloatArray
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
-(JNIEnv *, jobject, jobject);
+JNICALL Java_com_scanner_library_NativeScanner_getPoints
+        (JNIEnv *, jobject, jobject);
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
-(JNIEnv *, jobject, jobject);
+JNIEXPORT jobject
 
-JNIEXPORT jobject JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
-(JNIEnv *, jobject, jobject);
+JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
+        (JNIEnv *, jobject, jobject);
 
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getMagicColorBitmap
+        (JNIEnv *, jobject, jobject);
+
+JNIEXPORT jobject
+
+JNICALL Java_com_scanner_library_NativeScanner_getGrayBitmap
+        (JNIEnv *, jobject, jobject);
 
 #ifdef __cplusplus
 }
