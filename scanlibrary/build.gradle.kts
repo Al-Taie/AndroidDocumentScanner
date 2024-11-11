@@ -9,9 +9,9 @@ plugins {
 }
 
 android {
+    ndkVersion = Version.NDK
     namespace = AppConfig.LIBRARY_ID
     compileSdk = Version.COMPILE_SDK
-    ndkVersion = Version.NDK
     buildToolsVersion = Version.BUILD_TOOLS
 
     defaultConfig {
@@ -30,9 +30,12 @@ android {
 
     sourceSets {
         named("main") {
-            jniLibs { srcDir("src/main/libs") }
+            jniLibs {
+                srcDirs("src/main/jniLibs")
+            }
         }
     }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -48,9 +51,9 @@ android {
         jvmTarget = Version.JVM.toString()
     }
 
-    buildFeatures {
-        compose = true
-        buildConfig = true
+    buildFeatures { compose = true }
+    packaging {
+        jniLibs.keepDebugSymbols += "**/*.so"
     }
 }
 
@@ -60,12 +63,11 @@ kotlin {
 
 
 dependencies {
-    api(fileTree(baseDir = "libs") { include("*.jar") })
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.androidx.window)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.implementation.core)
     implementation(libs.bundles.implementation.compose)
-    api(libs.opencv)
 }
