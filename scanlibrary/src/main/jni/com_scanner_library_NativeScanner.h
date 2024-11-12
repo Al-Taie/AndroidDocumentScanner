@@ -62,6 +62,13 @@ extern "C" {
  * Method:    getScannedBitmap
  * Signature: (IILandroid/graphics/Bitmap;FFFFFFFF)Landroid/graphics/Bitmap;
  */
+JNIEXPORT void
+JNICALL Java_com_scanner_library_NativeScanner_configureScanner
+        (JNIEnv* env, jobject obj,
+        jboolean filterEnabled, jboolean applyCLAHE,
+        jdouble scaleFactor, jdouble contrastValue,
+        jdouble contrastLimitThreshold);
+
 JNIEXPORT jobject
 
 JNICALL Java_com_scanner_library_NativeScanner_getScannedBitmap
