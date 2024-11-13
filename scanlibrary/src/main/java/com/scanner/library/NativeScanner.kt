@@ -4,6 +4,14 @@ import android.graphics.Bitmap
 
 
 internal class NativeScanner {
+    external fun configureScanner(
+        filterEnabled: Boolean = true,
+        applyCLAHE: Boolean = true,
+        scaleFactor: Double = 2.0,
+        contrastValue: Double = 1.15,
+        contrastLimitThreshold: Double = 1.5
+    )
+
     external fun getScannedBitmap(
         bitmap: Bitmap?,
         x1: Float,
