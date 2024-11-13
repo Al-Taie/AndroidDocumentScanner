@@ -83,7 +83,7 @@ JNICALL Java_com_scanner_library_NativeScanner_getPoints
 
 JNIEXPORT jobject
 
-JNICALL Java_com_scanner_library_NativeScanner_getBWBitmap
+JNICALL Java_com_scanner_library_NativeScanner_getBwBitmap
         (JNIEnv *, jobject, jobject);
 
 JNIEXPORT jobject

@@ -7,7 +7,7 @@
 #include <opencv2/imgproc/imgproc_c.h>
 #include <android/bitmap.h>
 
-#define APP_NAME "Scanning"
+#define LOG_TAG "DEBUGGING"
 
 using namespace cv;
 using namespace std;
@@ -20,16 +20,16 @@ double CONTRAST_LIMIT_THRESHOLD = 1.5;
 
 // Helper function to calculate the angle between three points
 double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
-    double dx1 = pt1.x - pt0.x;
-    double dy1 = pt1.y - pt0.y;
-    double dx2 = pt2.x - pt0.x;
-    double dy2 = pt2.y - pt0.y;
+    const double dx1 = pt1.x - pt0.x;
+    const double dy1 = pt1.y - pt0.y;
+    const double dx2 = pt2.x - pt0.x;
+    const double dy2 = pt2.y - pt0.y;
     return (dx1 * dx2 + dy1 * dy2) /
            sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
 }
 
 // Find the largest square in an image
-vector<Point> findLargestSquare(Mat image, double minArea = 1000.0, double maxAspectRatioDiff = 0.3) {
+vector<Point> findLargestSquare(const Mat& image, const double minArea = 3500.0, const double maxAspectRatioDiff = 0.5) {
     Mat gray, blurred, edged;
     cvtColor(image, gray, COLOR_BGR2GRAY);
     GaussianBlur(gray, blurred, Size(5, 5), 0);
@@ -62,23 +62,23 @@ vector<Point> findLargestSquare(Mat image, double minArea = 1000.0, double maxAs
         }
     }
 
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning size() %zu", largestSquare.size());
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning size() %zu", largestSquare.size());
 
     if (largestSquare.empty()) {
-        int width = image.cols;
-        int height = image.rows;
+        const int width = image.cols;
+        const int height = image.rows;
         return {Point(0, 0), Point(width, 0), Point(0, height), Point(width, height)};
     }
 
     return largestSquare;
 }
 
-jobject mat_to_bitmap(JNIEnv *env, Mat &src, bool needPremultiplyAlpha, jobject bitmap_config) {
+jobject mat_to_bitmap(JNIEnv *env, const Mat &src, const bool needPremultiplyAlpha, jobject bitmap_config) {
     jclass java_bitmap_class = (jclass) env->FindClass("android/graphics/Bitmap");
     jmethodID mid = env->GetStaticMethodID(java_bitmap_class, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
     jobject bitmap = env->CallStaticObjectMethod(java_bitmap_class, mid, src.size().width, src.size().height, bitmap_config);
     AndroidBitmapInfo info;
-    void *pixels = 0;
+    void *pixels = nullptr;
 
     try {
         CV_Assert(AndroidBitmap_getInfo(env, bitmap, &info) >= 0);
@@ -155,11 +155,11 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_scanner_library_NativeScanner_configureScanner(
     JNIEnv *env,
     jobject obj,
-    jboolean filterEnabled,
-    jboolean applyCLAHE,
-    jdouble scaleFactor,
-    jdouble contrastValue,
-    jdouble contrastLimitThreshold
+    const jboolean filterEnabled,
+    const jboolean applyCLAHE,
+    const jdouble scaleFactor,
+    const jdouble contrastValue,
+    const jdouble contrastLimitThreshold
 ) {
     FILTER_ENABLED = filterEnabled;
     APPLY_CLAHE = applyCLAHE;
@@ -177,13 +177,13 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
 ) {
     AndroidBitmapInfo info;
     if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
-        __android_log_print(ANDROID_LOG_ERROR, APP_NAME, "Failed to get bitmap info.");
+        __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to get bitmap info.");
         return NULL;
     }
 
     void *pixels = nullptr;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
-        __android_log_print(ANDROID_LOG_ERROR, APP_NAME, "Failed to lock pixels.");
+        __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to lock pixels.");
         return NULL;
     }
 
@@ -222,23 +222,23 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject thiz, jobject bitmap) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getMagicColorBitmap");
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning getMagicColorBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void *pixels = 0;
+    void *pixels = nullptr;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_getInfo() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_getInfo() failed! error=%d", ret);
         return NULL;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_lockPixels() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_lockPixels() failed! error=%d", ret);
         return NULL;
     }
 
@@ -258,24 +258,24 @@ Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject 
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_com_scanner_library_NativeScanner_getBWBitmap(JNIEnv *env, jobject thiz, jobject bitmap) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getBWBitmap");
+Java_com_scanner_library_NativeScanner_getBwBitmap(JNIEnv *env, jobject thiz, jobject bitmap) {
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning getBwBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void *pixels = 0;
+    void *pixels = nullptr;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_getInfo() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_getInfo() failed! error=%d", ret);
         return NULL;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_lockPixels() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_lockPixels() failed! error=%d", ret);
         return NULL;
     }
 
@@ -283,8 +283,8 @@ Java_com_scanner_library_NativeScanner_getBWBitmap(JNIEnv *env, jobject thiz, jo
     Mat dst = mbgra.clone();
 
     cvtColor(mbgra, dst, COLOR_BGR2GRAY);
-    float alpha = 2.2;
-    float beta = 0;
+    constexpr float alpha = 2.2;
+    constexpr float beta = 0;
     dst.convertTo(dst, -1, alpha, beta);
     threshold(dst, dst, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
@@ -299,23 +299,23 @@ Java_com_scanner_library_NativeScanner_getBWBitmap(JNIEnv *env, jobject thiz, jo
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_scanner_library_NativeScanner_getGrayBitmap(JNIEnv *env, jobject thiz, jobject bitmap) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getGrayBitmap");
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning getGrayBitmap");
     int ret;
     AndroidBitmapInfo info;
-    void *pixels = 0;
+    void *pixels = nullptr;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_getInfo() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_getInfo() failed! error=%d", ret);
         return NULL;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Bitmap format is not RGBA_8888!");
         return NULL;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_lockPixels() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_lockPixels() failed! error=%d", ret);
         return NULL;
     }
 
@@ -334,23 +334,23 @@ Java_com_scanner_library_NativeScanner_getGrayBitmap(JNIEnv *env, jobject thiz, 
 
 extern "C" JNIEXPORT jfloatArray JNICALL
 Java_com_scanner_library_NativeScanner_getPoints(JNIEnv *env, jobject thiz, jobject bitmap) {
-    __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Scanning getPoints");
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning getPoints");
     int ret;
     AndroidBitmapInfo info;
     void *pixels = 0;
 
     if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_getInfo() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_getInfo() failed! error=%d", ret);
         return 0;
     }
 
     if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "Bitmap format is not RGBA_8888!");
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Bitmap format is not RGBA_8888!");
         return 0;
     }
 
     if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        __android_log_print(ANDROID_LOG_VERBOSE, APP_NAME, "AndroidBitmap_lockPixels() failed! error=%d", ret);
+        __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "AndroidBitmap_lockPixels() failed! error=%d", ret);
         return 0;
     }
 

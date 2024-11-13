@@ -20,7 +20,7 @@ internal class NativeScanner {
 
     external fun getMagicColorBitmap(bitmap: Bitmap?): Bitmap?
 
-    external fun getBWBitmap(bitmap: Bitmap?): Bitmap?
+    external fun getBwBitmap(bitmap: Bitmap?): Bitmap?
 
     external fun getPoints(bitmap: Bitmap?): FloatArray?
 
