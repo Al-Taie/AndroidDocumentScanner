@@ -22,8 +22,7 @@ android {
         }
         externalNativeBuild {
             ndkBuild {
-                ndkPath = "src/main/jni"
-                arguments += listOf("APP_PLATFORM=android-21", "-DANDROID_STL=c++_shared")
+                arguments += listOf("APP_PLATFORM=android-24", "-DANDROID_STL=c++_shared")
             }
         }
     }
@@ -55,6 +54,15 @@ android {
     packaging {
         jniLibs.keepDebugSymbols += "**/*.so"
     }
+
+//    externalNativeBuild {
+//        cmake {
+//            path("CMakeLists.txt")
+//        }
+//    }
+//    lint {
+//        abortOnError = false
+//    }
 }
 
 kotlin {

@@ -29,7 +29,8 @@ double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
 }
 
 // Find the largest square in an image
-vector<Point> findLargestSquare(const Mat& image, const double minArea = 3500.0, const double maxAspectRatioDiff = 0.5) {
+vector<Point> findLargestSquare(const Mat &image, const double minArea = 3500.0,
+                                const double maxAspectRatioDiff = 0.5) {
     Mat gray, blurred, edged;
     cvtColor(image, gray, COLOR_BGR2GRAY);
     GaussianBlur(gray, blurred, Size(5, 5), 0);
@@ -41,7 +42,7 @@ vector<Point> findLargestSquare(const Mat& image, const double minArea = 3500.0,
     vector<Point> largestSquare;
     double maxArea = 0;
 
-    for (const auto &contour : contours) {
+    for (const auto &contour: contours) {
         vector<Point> approx;
         approxPolyDP(contour, approx, arcLength(contour, true) * 0.02, true);
 
@@ -75,8 +76,10 @@ vector<Point> findLargestSquare(const Mat& image, const double minArea = 3500.0,
 
 auto matToBitmap(JNIEnv *env, const Mat &src, const bool needPremultiplyAlpha, jobject bitmap_config) {
     const auto java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetStaticMethodID(java_bitmap_class, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-    auto bitmap = env->CallStaticObjectMethod(java_bitmap_class, mid, src.size().width, src.size().height, bitmap_config);
+    jmethodID mid = env->GetStaticMethodID(java_bitmap_class, "createBitmap",
+                                           "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
+    auto bitmap = env->CallStaticObjectMethod(java_bitmap_class, mid, src.size().width,
+                                              src.size().height, bitmap_config);
     AndroidBitmapInfo bitmapInfo;
     void *pixels = nullptr;
 
@@ -153,13 +156,13 @@ Mat applyFilters(const Mat &src) {
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_scanner_library_NativeScanner_configureScanner(
-    JNIEnv *env,
-    jobject obj,
-    const jboolean filterEnabled,
-    const jboolean applyCLAHE,
-    const jdouble scaleFactor,
-    const jdouble contrastValue,
-    const jdouble contrastLimitThreshold
+        JNIEnv *env,
+        jobject obj,
+        const jboolean filterEnabled,
+        const jboolean applyCLAHE,
+        const jdouble scaleFactor,
+        const jdouble contrastValue,
+        const jdouble contrastLimitThreshold
 ) {
     FILTER_ENABLED = filterEnabled;
     APPLY_CLAHE = applyCLAHE;
@@ -170,10 +173,10 @@ Java_com_scanner_library_NativeScanner_configureScanner(
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_scanner_library_NativeScanner_getScannedBitmap(
-    JNIEnv *env, jobject thiz,
-    jobject bitmap,
-    jfloat x1, jfloat y1, jfloat x2, jfloat y2,
-    jfloat x3, jfloat y3, jfloat x4, jfloat y4
+        JNIEnv *env, jobject thiz,
+        jobject bitmap,
+        jfloat x1, jfloat y1, jfloat x2, jfloat y2,
+        jfloat x3, jfloat y3, jfloat x4, jfloat y4
 ) {
     AndroidBitmapInfo bitmapInfo;
     if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) < 0) {
@@ -190,14 +193,14 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
     Mat mbgra(bitmapInfo.height, bitmapInfo.width, CV_8UC4, pixels);
 
     vector<Point2f> src_points = {
-        Point2f(x1, y1), Point2f(x2, y2), Point2f(x3, y3), Point2f(x4, y4)
+            Point2f(x1, y1), Point2f(x2, y2), Point2f(x3, y3), Point2f(x4, y4)
     };
 
     float width = norm(src_points[0] - src_points[1]);
     float height = norm(src_points[0] - src_points[3]);
 
     vector<Point2f> dst_points = {
-        Point2f(0, 0), Point2f(width, 0), Point2f(width, height), Point2f(0, height)
+            Point2f(0, 0), Point2f(width, 0), Point2f(width, height), Point2f(0, height)
     };
 
     Mat transform_matrix = getPerspectiveTransform(src_points, dst_points);
@@ -213,7 +216,8 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
     AndroidBitmap_unlockPixels(env, bitmap);
 
     jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-    jmethodID getConfig = env->GetMethodID(bitmapClass, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jmethodID getConfig = env->GetMethodID(bitmapClass, "getConfig",
+                                           "()Landroid/graphics/Bitmap$Config;");
     jobject bitmapConfig = env->CallObjectMethod(bitmap, getConfig);
     jobject result_bitmap = matToBitmap(env, high_res_image, false, bitmapConfig);
 
@@ -221,7 +225,8 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject thiz, jobject bitmap) {
+Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject thiz,
+                                                           jobject bitmap) {
     __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, "Scanning getMagicColorBitmap");
     AndroidBitmapInfo bitmapInfo;
     void *pixels = nullptr;
@@ -248,7 +253,8 @@ Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject 
     dst.convertTo(dst, -1, alpha, beta);
 
     const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
     jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
 
@@ -287,7 +293,8 @@ Java_com_scanner_library_NativeScanner_getBwBitmap(JNIEnv *env, jobject thiz, jo
     threshold(dst, dst, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
     const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
     jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
 
@@ -321,7 +328,8 @@ Java_com_scanner_library_NativeScanner_getGrayBitmap(JNIEnv *env, jobject thiz, 
     cvtColor(mbgra, dst, COLOR_BGR2GRAY);
 
     const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
+                                     "()Landroid/graphics/Bitmap$Config;");
     jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
     jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
 
