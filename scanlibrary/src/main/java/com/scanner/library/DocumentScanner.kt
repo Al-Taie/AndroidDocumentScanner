@@ -1,8 +1,14 @@
 package com.scanner.library
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
+import com.googlecode.tesseract.android.TessBaseAPI
+import com.scanner.library.utils.init
 import com.scanner.library.utils.isValid
+import com.scanner.library.utils.recognize
+import com.scanner.library.utils.rotate
 import com.scanner.library.utils.toOffsetPoints
 
 
@@ -57,4 +63,20 @@ class DocumentScanner {
             y4 = point4.y,
         )
     }.getOrNull()
+
+    suspend fun recognizeText(
+        context: Context,
+        bitmap: Bitmap?,
+        rotationDegrees: Int = 0
+    ): String? = runCatching {
+        requireNotNull(bitmap)
+        val tessBaseAPI = TessBaseAPI()
+        tessBaseAPI.init(context)
+        val rotatedBitmap = if (bitmap.height > bitmap.width)
+            bitmap.rotate(degrees = -rotationDegrees.toFloat())
+        else
+            bitmap
+        return tessBaseAPI.recognize(rotatedBitmap)
+    }.onFailure { Log.e("DEBUGGING", "recognizeText: $it") }
+        .getOrNull()
 }
