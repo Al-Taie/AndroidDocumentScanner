@@ -129,6 +129,19 @@ auto matToBitmap(JNIEnv *env, const Mat &src, const bool needPremultiplyAlpha, j
     }
 }
 
+
+jobject createBitmap(JNIEnv* env, jobject bitmap, cv::Mat& dst) {
+    // Get the Bitmap class and its getConfig method
+    jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
+    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig", "()Landroid/graphics/Bitmap$Config;");
+
+    // Get the Bitmap's configuration
+    jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
+    jobject result = matToBitmap(env, dst, false, bitmap_config);
+    AndroidBitmap_unlockPixels(env, bitmap);
+    return result;
+}
+
 Mat applyFilters(const Mat &src) {
     if (!FILTER_ENABLED) return src;
 
@@ -213,15 +226,7 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
     resize(filtered_image, high_res_image, output_size, 0, 0, INTER_LANCZOS4);
     flip(high_res_image, high_res_image, 1);
 
-    AndroidBitmap_unlockPixels(env, bitmap);
-
-    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-    jmethodID getConfig = env->GetMethodID(bitmapClass, "getConfig",
-                                           "()Landroid/graphics/Bitmap$Config;");
-    jobject bitmapConfig = env->CallObjectMethod(bitmap, getConfig);
-    jobject result_bitmap = matToBitmap(env, high_res_image, false, bitmapConfig);
-
-    return result_bitmap;
+    return createBitmap(env, bitmap, high_res_image);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
@@ -247,19 +252,12 @@ Java_com_scanner_library_NativeScanner_getMagicColorBitmap(JNIEnv *env, jobject 
     }
 
     const Mat mbgra(bitmapInfo.height, bitmapInfo.width, CV_8UC4, pixels);
-    Mat dst = mbgra.clone();
+    Mat dstBitmap = mbgra.clone();
     constexpr float alpha = 1.9;
     constexpr float beta = -80;
-    dst.convertTo(dst, -1, alpha, beta);
+    dstBitmap.convertTo(dstBitmap, -1, alpha, beta);
 
-    const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
-                                     "()Landroid/graphics/Bitmap$Config;");
-    jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
-
-    AndroidBitmap_unlockPixels(env, bitmap);
-    return _bitmap;
+    return createBitmap(env, bitmap, dstBitmap);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
@@ -284,22 +282,15 @@ Java_com_scanner_library_NativeScanner_getBwBitmap(JNIEnv *env, jobject thiz, jo
     }
 
     const Mat mbgra(bitmapInfo.height, bitmapInfo.width, CV_8UC4, pixels);
-    Mat dst = mbgra.clone();
+    Mat dstBitmap = mbgra.clone();
 
-    cvtColor(mbgra, dst, COLOR_BGR2GRAY);
+    cvtColor(mbgra, dstBitmap, COLOR_BGR2GRAY);
     constexpr float alpha = 2.2;
     constexpr float beta = 0;
-    dst.convertTo(dst, -1, alpha, beta);
-    threshold(dst, dst, 0, 255, THRESH_BINARY | THRESH_OTSU);
+    dstBitmap.convertTo(dstBitmap, -1, alpha, beta);
+    threshold(dstBitmap, dstBitmap, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
-    const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
-                                     "()Landroid/graphics/Bitmap$Config;");
-    jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
-
-    AndroidBitmap_unlockPixels(env, bitmap);
-    return _bitmap;
+    return createBitmap(env, bitmap, dstBitmap);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
@@ -324,17 +315,10 @@ Java_com_scanner_library_NativeScanner_getGrayBitmap(JNIEnv *env, jobject thiz, 
     }
 
     const Mat mbgra(bitmapInfo.height, bitmapInfo.width, CV_8UC4, pixels);
-    Mat dst = mbgra.clone();
-    cvtColor(mbgra, dst, COLOR_BGR2GRAY);
+    Mat dstBitmap = mbgra.clone();
+    cvtColor(mbgra, dstBitmap, COLOR_BGR2GRAY);
 
-    const jclass java_bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID mid = env->GetMethodID(java_bitmap_class, "getConfig",
-                                     "()Landroid/graphics/Bitmap$Config;");
-    jobject bitmap_config = env->CallObjectMethod(bitmap, mid);
-    jobject _bitmap = matToBitmap(env, dst, false, bitmap_config);
-
-    AndroidBitmap_unlockPixels(env, bitmap);
-    return _bitmap;
+    return createBitmap(env, bitmap, dstBitmap);
 }
 
 extern "C" JNIEXPORT jfloatArray JNICALL
