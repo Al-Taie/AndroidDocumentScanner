@@ -23,5 +23,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AndroidDocumentScanner"
-include(":app")
 include(":scanlibrary")
