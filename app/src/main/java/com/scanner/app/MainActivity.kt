@@ -95,9 +95,9 @@ fun ScannedImageOverlay(scannedBitmap: Bitmap?, recognizedText: String?) {
             contentAlignment = Alignment.BottomCenter
         ) {
             Image(
-                scannedBitmap.asImageBitmap(),
+                bitmap = scannedBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.aspectRatio(0.9f)
+                modifier = Modifier.aspectRatio(0.9f).align(Alignment.TopCenter)
             )
 
             Text(
