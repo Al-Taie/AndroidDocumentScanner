@@ -4,7 +4,7 @@
     <uses-feature
         android:name="android.hardware.camera"
         android:required="true" />
-    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34"
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34"
         tools:ignore="GradleOverrides,OldTargetApi" />
 
     <uses-permission android:name="android.permission.CAMERA" />

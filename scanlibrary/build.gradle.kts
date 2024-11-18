@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    `maven-publish`
 }
 
 android {
@@ -78,4 +79,17 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.implementation.core)
     implementation(libs.bundles.implementation.compose)
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            afterEvaluate {
+                from(components["release"])
+                groupId = "com.github.Al-Taie"
+                artifactId = "document_scanner_lib_android"
+                version = "1.0.0"
+            }
+        }
+    }
 }
