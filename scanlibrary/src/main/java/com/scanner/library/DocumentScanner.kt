@@ -3,13 +3,16 @@ package com.scanner.library
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.camera.core.ImageProxy
 import androidx.compose.ui.geometry.Offset
 import com.googlecode.tesseract.android.TessBaseAPI
 import com.scanner.library.utils.init
 import com.scanner.library.utils.isValid
 import com.scanner.library.utils.recognize
 import com.scanner.library.utils.rotate
+import com.scanner.library.utils.size
 import com.scanner.library.utils.toOffsetPoints
+import com.scanner.library.utils.toRotatedBitmap
 
 
 class DocumentScanner {
@@ -79,4 +82,35 @@ class DocumentScanner {
         return tessBaseAPI.recognize(rotatedBitmap)
     }.onFailure { Log.e("DEBUGGING", "recognizeText: $it") }
         .getOrNull()
+
+    suspend fun processImage(
+        context: Context,
+        imageProxy: ImageProxy,
+        isRecognizingText: Boolean,
+    ): ScannedDocumentResult {
+        val bitmap = imageProxy.toRotatedBitmap()
+        val bestPoints = getBestPoints(bitmap = bitmap)
+
+        if (bestPoints.isEmpty()) return ScannedDocumentResult.Empty
+
+        val scannedImage = getScannedBitmap(
+            bitmap = bitmap,
+            points = bestPoints
+        )
+
+        val recognizedText = if (isRecognizingText)
+            recognizeText(
+                context = context,
+                bitmap = scannedImage,
+                rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            )
+        else null
+
+        return ScannedDocumentResult(
+            bitmap = scannedImage,
+            points = bestPoints,
+            text = recognizedText,
+            imageSize = bitmap.size
+        )
+    }
 }

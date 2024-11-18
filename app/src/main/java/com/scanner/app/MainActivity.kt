@@ -1,19 +1,28 @@
 package com.scanner.app
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.camera.core.ImageAnalysis.Analyzer
-import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -25,14 +34,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.scanner.app.ui.theme.AndroidDocumentScannerTheme
 import com.scanner.library.DocumentScanner
+import com.scanner.library.ScannedDocumentResult
 import com.scanner.library.common.CameraView
 import com.scanner.library.common.GraphicOverlay
 import com.scanner.library.utils.returnUnit
-import com.scanner.library.utils.size
-import com.scanner.library.utils.toRotatedBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -65,10 +72,13 @@ fun App(modifier: Modifier = Modifier) {
         createAnalyzer(
             scope = scope,
             context = context,
-            points = points,
-            updateImageSize = { imageSize = it },
-            updateScannedBitmap = { scannedBitmap = it },
-            updateRecognizedText = { recognizedText = it }
+            onResult = { result ->
+                scannedBitmap = result.bitmap
+                recognizedText = result.text
+                imageSize = result.imageSize
+                points.clear()
+                points.addAll(result.points)
+            }
         )
     }
 
@@ -97,7 +107,9 @@ fun ScannedImageOverlay(scannedBitmap: Bitmap?, recognizedText: String?) {
             Image(
                 bitmap = scannedBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.aspectRatio(0.9f).align(Alignment.TopCenter)
+                modifier = Modifier
+                    .aspectRatio(0.9f)
+                    .align(Alignment.TopCenter)
             )
 
             Text(
@@ -112,11 +124,8 @@ fun ScannedImageOverlay(scannedBitmap: Bitmap?, recognizedText: String?) {
 
 private fun createAnalyzer(
     scope: CoroutineScope,
-    context: android.content.Context,
-    points: MutableList<Offset>,
-    updateImageSize: (Size) -> Unit,
-    updateScannedBitmap: (Bitmap?) -> Unit,
-    updateRecognizedText: (String?) -> Unit
+    context: Context,
+    onResult: (ScannedDocumentResult) -> Unit,
 ): Analyzer {
     val scanner = DocumentScanner().apply {
         configureScanner(
@@ -128,39 +137,25 @@ private fun createAnalyzer(
         )
     }
 
-    return object : Analyzer {
-        override fun analyze(imageProxy: ImageProxy) {
-            scope.launch(Dispatchers.IO) {
-                val bitmap = imageProxy.toRotatedBitmap()
-                val bestPoints = scanner.getBestPoints(bitmap)
-
-                if (bestPoints.isEmpty()) {
-                    points.clear()
-                    delay(250)
-                    imageProxy.close()
-                    return@launch
-                }
-
-                points.clear()
-                points.addAll(bestPoints)
-
-                val scannedImage = scanner.getScannedBitmap(bitmap, bestPoints)
-                updateImageSize(bitmap.size)
-                updateScannedBitmap(scannedImage)
-
-                val text = scanner.recognizeText(
-                    context = context,
-                    bitmap = scannedImage,
-                    rotationDegrees = imageProxy.imageInfo.rotationDegrees
+    return Analyzer { imageProxy ->
+        scope.launch(Dispatchers.IO) {
+            try {
+                onResult(
+                    scanner.processImage(
+                        context = context,
+                        imageProxy = imageProxy,
+                        isRecognizingText = true
+                    )
                 )
-                updateRecognizedText(text)
-
-                delay(500)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
                 imageProxy.close()
-            }.returnUnit()
-        }
+            }
+        }.returnUnit()
     }
 }
+
 
 @Composable
 @Preview(showBackground = true)
