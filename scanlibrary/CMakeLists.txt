@@ -3,10 +3,10 @@
 
 # Sets the minimum version of CMake required to build the native library.
 
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.5)
 project(AndroidDocumentScanner)
 
-set(TARGET smart_cropper)
+set(TARGET AndroidDocumentScanner)
 set(SRC_DIR src/main/jni/)
 set(OPENCV_LIB_DIR sdk/native/staticlibs/${ANDROID_ABI}/)
 set(OPENCV_3RD_LIB_DIR sdk/native/3rdparty/libs/${ANDROID_ABI}/)
