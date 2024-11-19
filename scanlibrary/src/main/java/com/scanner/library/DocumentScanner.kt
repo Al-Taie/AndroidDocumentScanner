@@ -87,8 +87,37 @@ class DocumentScanner {
         context: Context,
         imageProxy: ImageProxy,
         isRecognizingText: Boolean,
+    ): ScannedDocumentResult = processImage(
+        context = context,
+        image = imageProxy,
+        isRecognizingText = isRecognizingText
+    )
+
+    suspend fun processImage(
+        context: Context,
+        bitmap: Bitmap,
+        isRecognizingText: Boolean,
+    ): ScannedDocumentResult = processImage(
+        context = context,
+        image = bitmap,
+        isRecognizingText = isRecognizingText
+    )
+
+    private suspend fun processImage(
+        context: Context,
+        image: Any,
+        isRecognizingText: Boolean,
     ): ScannedDocumentResult {
-        val bitmap = imageProxy.toRotatedBitmap()
+        var rotationDegrees = 0
+        val bitmap = when (image) {
+            is Bitmap -> image
+            is ImageProxy -> with(image) {
+                rotationDegrees = imageInfo.rotationDegrees
+                toRotatedBitmap()
+            }
+
+            else -> return ScannedDocumentResult.Empty
+        }
         val bestPoints = getBestPoints(bitmap = bitmap)
 
         if (bestPoints.isEmpty()) return ScannedDocumentResult.Empty
@@ -102,7 +131,7 @@ class DocumentScanner {
             recognizeText(
                 context = context,
                 bitmap = scannedImage,
-                rotationDegrees = imageProxy.imageInfo.rotationDegrees
+                rotationDegrees = rotationDegrees
             )
         else null
 
