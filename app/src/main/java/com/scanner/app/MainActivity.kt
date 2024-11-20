@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.scanner.app.ui.theme.AndroidDocumentScannerTheme
 import com.scanner.library.DocumentScanner
 import com.scanner.library.ScannedDocumentResult
-import com.scanner.library.common.CameraView
-import com.scanner.library.common.GraphicOverlay
+import com.scanner.library.ui.CameraView
+import com.scanner.library.ui.GraphicOverlay
 import com.scanner.library.utils.returnUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

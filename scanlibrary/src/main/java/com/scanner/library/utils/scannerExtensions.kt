@@ -34,3 +34,5 @@ fun Any?.returnUnit() = Unit
 
 val Bitmap.size: Size
     get() = Size(width.toFloat(), height.toFloat())
+
+fun List<Offset>.getOrZero(index: Int): Offset = getOrNull(index) ?: Offset.Zero
