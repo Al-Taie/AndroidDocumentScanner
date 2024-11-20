@@ -10,12 +10,12 @@
 
 -keep class com.scanner.library.NativeScanner { *; }
 -keep class com.scanner.library.DocumentScanner { *; }
--keep class com.scanner.library.common.** { *; }
+-keep class com.scanner.library.ui.** { *; }
 
 -keepclasseswithmembernames,includedescriptorclasses class * {
     native <methods>;
 }
 -dontwarn com.scanner.library.DocumentScanner
--dontwarn com.scanner.library.common.CameraViewKt
--dontwarn com.scanner.library.common.GraphicOverlayKt
+-dontwarn com.scanner.library.ui.CameraViewKt
+-dontwarn com.scanner.library.ui.GraphicOverlayKt
 

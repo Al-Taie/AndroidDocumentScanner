@@ -1,4 +1,4 @@
-package com.scanner.library.common
+package com.scanner.library.ui
 
 
 import android.content.res.Configuration
