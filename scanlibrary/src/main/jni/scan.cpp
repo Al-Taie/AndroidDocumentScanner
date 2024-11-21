@@ -28,6 +28,28 @@ double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
            sqrt((dx1 * dx1 + dy1 * dy1) * (dx2 * dx2 + dy2 * dy2) + 1e-10);
 }
 
+// Helper function to sort points in clockwise order
+vector<Point> sortPointsClockwise(const vector<Point> &pts) {
+    // Compute the centroid of the points
+    Point2f centroid(0, 0);
+    for (const Point &pt : pts) {
+        centroid.x += pt.x;
+        centroid.y += pt.y;
+    }
+    centroid.x /= pts.size();
+    centroid.y /= pts.size();
+
+    // Sort points by angle from the centroid
+    vector<Point> sortedPts = pts;
+    sort(sortedPts.begin(), sortedPts.end(), [&centroid](const Point &a, const Point &b) {
+        double angleA = atan2(a.y - centroid.y, a.x - centroid.x);
+        double angleB = atan2(b.y - centroid.y, b.x - centroid.x);
+        return angleA < angleB;
+    });
+
+    return sortedPts;
+}
+
 // Find the largest square in an image
 vector<Point> findLargestSquare(const Mat &image, const double minArea = 3500.0,
                                 const double maxAspectRatioDiff = 0.5) {
@@ -57,7 +79,7 @@ vector<Point> findLargestSquare(const Mat &image, const double minArea = 3500.0,
                 const double area = contourArea(approx);
                 if (area > maxArea) {
                     maxArea = area;
-                    largestSquare = approx;
+                    largestSquare = sortPointsClockwise(approx); // Sort the points!
                 }
             }
         }
@@ -224,7 +246,6 @@ Java_com_scanner_library_NativeScanner_getScannedBitmap(
     Size output_size(width * SCALE_FACTOR, height * SCALE_FACTOR);
     Mat high_res_image;
     resize(filtered_image, high_res_image, output_size, 0, 0, INTER_LANCZOS4);
-    flip(high_res_image, high_res_image, 1);
 
     return createBitmap(env, bitmap, high_res_image);
 }
