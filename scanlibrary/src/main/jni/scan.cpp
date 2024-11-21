@@ -53,13 +53,35 @@ vector<Point> sortPointsClockwise(const vector<Point> &pts) {
 // Find the largest square in an image
 vector<Point> findLargestSquare(const Mat &image, const double minArea = 3500.0,
                                 const double maxAspectRatioDiff = 0.5) {
-    Mat gray, blurred, edged;
-    cvtColor(image, gray, COLOR_BGR2GRAY);
-    GaussianBlur(gray, blurred, Size(5, 5), 0);
-    Canny(blurred, edged, 75, 200);
+  Mat gray, blurred, edged, dilated;
 
-    vector<vector<Point>> contours;
-    findContours(edged, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+  // Convert to grayscale
+  cvtColor(image, gray, COLOR_BGR2GRAY);
+
+  // Apply adaptive histogram equalization to improve contrast
+  Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+  clahe->setClipLimit(4);
+  clahe->apply(gray, gray);
+
+  // Apply GaussianBlur to reduce noise
+  GaussianBlur(gray, blurred, Size(5, 5), 1.5);
+
+  // Use adaptive thresholding to emphasize edges (optional, comment if not useful)
+  Mat thresholded;
+  adaptiveThreshold(blurred, thresholded, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 2);
+
+  // Perform edge detection with dynamic thresholds
+  double lowerThreshold = 30;
+  double upperThreshold = 175;
+  Canny(thresholded, edged, lowerThreshold, upperThreshold);
+
+  // Dilate the edges to close small gaps
+  Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+  dilate(edged, dilated, kernel);
+
+  // Find contours
+  vector<vector<Point>> contours;
+  findContours(dilated, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
     vector<Point> largestSquare;
     double maxArea = 0;
