@@ -17,6 +17,7 @@ import com.scanner.library.utils.toRotatedBitmap
 
 class DocumentScanner {
     private val scanner by lazy { NativeScanner() }
+    private var distance: Float = 0f
 
     fun configureScanner(
         filterEnabled: Boolean = true,
@@ -46,7 +47,11 @@ class DocumentScanner {
 
     fun getMagicColorBitmap(bitmap: Bitmap?): Bitmap? = scanner.getMagicColorBitmap(bitmap)
 
-    fun getPoints(bitmap: Bitmap?): List<Offset> = scanner.getPoints(bitmap).toOffsetPoints()
+    fun getPoints(bitmap: Bitmap?): List<Offset> {
+        val points = scanner.getPoints(bitmap)
+        distance = points?.lastOrNull() ?: 0f
+        return points.toOffsetPoints()
+    }
 
     fun getScannedBitmap(bitmap: Bitmap, points: List<Offset>): Bitmap? = runCatching {
         val point1 = points[0]
@@ -139,7 +144,13 @@ class DocumentScanner {
             bitmap = scannedImage,
             points = bestPoints,
             text = recognizedText,
-            imageSize = bitmap.size
+            imageSize = bitmap.size,
+            state = when (distance) {
+                in 0f..<10f -> DocumentState.GoFurther
+                in 10f..11f -> DocumentState.Correct
+                else -> DocumentState.ComeCloser
+            }
         )
     }
+
 }
