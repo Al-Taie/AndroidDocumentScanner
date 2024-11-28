@@ -88,7 +88,7 @@ publishing {
                 from(components["release"])
                 groupId = "com.github.Al-Taie"
                 artifactId = "document_scanner_lib_android"
-                version = "1.0.5"
+                version = "1.0.6"
             }
         }
     }
