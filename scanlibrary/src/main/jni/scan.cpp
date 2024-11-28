@@ -16,6 +16,28 @@ double SCALE_FACTOR = 2.0;
 double CONTRAST_VALUE = 1.25;
 double CONTRAST_LIMIT_THRESHOLD = 1.5;
 
+bool isPointValid(const Point& point) {
+  // Check if either x or y is NaN
+  if (isnan(point.x) || isnan(point.y))
+    return false;
+
+  // Check if either x or y is not infinite
+  if (!isinf(point.x) || !isinf(point.y))
+    return false;
+
+  if (point.x < 0 || point.y < 0)
+    return false;
+
+  // Otherwise, valid
+  return true;
+}
+
+vector<Point> filterValidPoints(const vector<Point>& points) {
+  vector<Point> validPoints;
+  copy_if(points.begin(), points.end(), back_inserter(validPoints), isPointValid);
+  return validPoints;
+}
+
 // Helper function to calculate the angle between three points
 double angle(const Point &pt1, const Point &pt2, const Point &pt0) {
     const double dx1 = pt1.x - pt0.x;
@@ -79,14 +101,14 @@ vector<Point> findLargestSquare(const Mat &image, const double minArea = 1500.0,
 
   // Find contours
   vector<vector<Point>> contours;
-  findContours(dilated, contours, RETR_LIST, CHAIN_APPROX_NONE);
+  findContours(dilated, contours, RETR_LIST, CHAIN_APPROX_TC89_L1);
 
     vector<Point> largestSquare;
     double maxArea = 0;
 
     for (const auto &contour: contours) {
         vector<Point> approx;
-        approxPolyDP(contour, approx, arcLength(contour, true) * 0.02, true);
+        approxPolyDP(contour, approx, arcLength(contour, true) * 0.021, true);
 
         if (approx.size() == 4 && isContourConvex(approx) && contourArea(approx) > minArea) {
             double maxCosine = 0;
