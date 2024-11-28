@@ -37,9 +37,11 @@ import com.scanner.library.DocumentScanner
 import com.scanner.library.ScannedDocumentResult
 import com.scanner.library.ui.CameraView
 import com.scanner.library.ui.GraphicOverlay
+import com.scanner.library.utils.isValid
 import com.scanner.library.utils.returnUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -140,13 +142,13 @@ private fun createAnalyzer(
     return Analyzer { imageProxy ->
         scope.launch(Dispatchers.IO) {
             try {
-                onResult(
-                    scanner.processImage(
-                        context = context,
-                        imageProxy = imageProxy,
-                        isRecognizingText = true
-                    )
-                )
+                val result = scanner.processImage(
+                    context = context,
+                    imageProxy = imageProxy,
+                    isRecognizingText = false
+                ).also(onResult)
+                if (result.points.isValid())
+                    delay(750)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

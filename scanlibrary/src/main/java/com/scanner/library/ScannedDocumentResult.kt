@@ -10,7 +10,7 @@ data class ScannedDocumentResult(
     val bitmap: Bitmap? = null,
     val imageSize: Size = Size.Zero,
     val points: List<Offset> = emptyList(),
-    val state: DocumentState = DocumentState.GoFurther,
+    val state: DocumentState = DocumentState.GoFurther(0f),
 ) {
     companion object {
         val Empty = ScannedDocumentResult()

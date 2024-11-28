@@ -33,13 +33,8 @@ class DocumentScanner {
         contrastLimitThreshold = contrastLimitThreshold
     )
 
-    fun getBestPoints(bitmap: Bitmap): List<Offset> = sequenceOf(
-        { bitmap },
-        ::getMagicColorBitmap,
-        ::getBwBitmap,
-        ::getGrayBitmap
-    ).map { transformation -> getPoints(transformation(bitmap)) }
-        .firstOrNull(List<Offset>::isValid) ?: emptyList()
+    fun getBestPoints(bitmap: Bitmap): List<Offset> =
+        getPoints(getGrayBitmap(bitmap)).takeIf(List<Offset>::isValid) ?: emptyList()
 
     fun getBwBitmap(bitmap: Bitmap?): Bitmap? = scanner.getBwBitmap(bitmap)
 
@@ -146,9 +141,9 @@ class DocumentScanner {
             text = recognizedText,
             imageSize = bitmap.size,
             state = when (distance) {
-                in 0f..<10f -> DocumentState.GoFurther
-                in 10f..11f -> DocumentState.Correct
-                else -> DocumentState.ComeCloser
+                in 0f..<10.5f -> DocumentState.GoFurther(distance = distance)
+                in 10.5f..12.5f -> DocumentState.Correct(distance = distance)
+                else -> DocumentState.ComeCloser(distance = distance)
             }
         )
     }
