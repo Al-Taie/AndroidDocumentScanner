@@ -76,7 +76,7 @@ fun App(modifier: Modifier = Modifier) {
             context = context,
             onResult = { result ->
                 scannedBitmap = result.bitmap
-                recognizedText = result.text
+                recognizedText = result.distance.toString()
                 imageSize = result.imageSize
                 points.clear()
                 points.addAll(result.points)
@@ -134,7 +134,7 @@ private fun createAnalyzer(
             filterEnabled = true,
             applyCLAHE = true,
             scaleFactor = 2.0,
-            contrastValue = 1.25,
+            contrastValue = 1.2,
             contrastLimitThreshold = 2.5
         )
     }
@@ -164,3 +164,5 @@ private fun createAnalyzer(
 private fun Preview() {
     AndroidDocumentScannerTheme { App() }
 }
+// 5.8 - 7.0
+// 10.8 - 12.5
