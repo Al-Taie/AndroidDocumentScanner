@@ -134,7 +134,7 @@ private fun createAnalyzer(
             filterEnabled = true,
             applyCLAHE = true,
             scaleFactor = 2.0,
-            contrastValue = 1.2,
+            contrastValue = 1.25,
             contrastLimitThreshold = 2.5
         )
     }
