@@ -80,20 +80,20 @@ vector<Point> findLargestSquare(const Mat &image, const double minArea = 1500.0,
 
   // Apply adaptive histogram equalization to improve contrast
   Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-  clahe->setClipLimit(5);
+  clahe->setClipLimit(7);
   clahe->apply(gray, gray);
 
   // Apply GaussianBlur to reduce noise
-  GaussianBlur(gray, blurred, Size(5, 5), 3.0);
+  GaussianBlur(gray, blurred, Size(1, 1), 1000.0);
 
   // Use adaptive thresholding to emphasize edges (optional, comment if not useful)
   Mat thresholded;
-  adaptiveThreshold(blurred, thresholded, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 11, 2);
+  threshold(blurred, thresholded, 120, 255, THRESH_BINARY);
 
   // Perform edge detection with dynamic thresholds
-  double lowerThreshold = 25;
+  double lowerThreshold = 100;
   double upperThreshold = 200;
-  Canny(thresholded, edged, lowerThreshold, upperThreshold);
+  Canny(thresholded, edged, lowerThreshold, upperThreshold, 7, true);
 
   // Dilate the edges to close small gaps
   Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
@@ -101,14 +101,14 @@ vector<Point> findLargestSquare(const Mat &image, const double minArea = 1500.0,
 
   // Find contours
   vector<vector<Point>> contours;
-  findContours(dilated, contours, RETR_LIST, CHAIN_APPROX_TC89_L1);
+  findContours(dilated, contours, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
     vector<Point> largestSquare;
     double maxArea = 0;
 
     for (const auto &contour: contours) {
         vector<Point> approx;
-        approxPolyDP(contour, approx, arcLength(contour, true) * 0.021, true);
+        approxPolyDP(contour, approx, arcLength(contour, true) * 0.02, true);
 
         if (approx.size() == 4 && isContourConvex(approx) && contourArea(approx) > minArea) {
             double maxCosine = 0;
