@@ -91,14 +91,6 @@ tasks.register<Jar>("javadocJar") {
 }
 
 publishing {
-    publications {
-        register<MavenPublication>("release") {
-            from(components.findByName("java"))
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
-        }
-    }
-
     repositories {
         maven {
             name = "GitHubPackages"
@@ -107,6 +99,14 @@ publishing {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
             }
+        }
+    }
+
+    publications {
+        register<MavenPublication>("release") {
+            from(components.findByName("java"))
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
         }
     }
 }
