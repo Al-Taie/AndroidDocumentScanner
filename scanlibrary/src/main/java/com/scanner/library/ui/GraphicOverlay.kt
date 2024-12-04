@@ -24,6 +24,7 @@ fun PreviewView.GraphicOverlay(
     imageSize: Size,
     points: List<Offset>,
     color: Color = Color.Green.copy(alpha = 0.15f),
+    onPointsUpdate: (List<Offset>) -> Unit = {},
 ) {
     var scaleFactor by remember { mutableFloatStateOf(1.0f) }
     var postScaleOffset by remember { mutableStateOf(Offset.Zero) }
@@ -51,7 +52,7 @@ fun PreviewView.GraphicOverlay(
      */
     fun List<Offset>.transform(): List<Offset> = runCatching {
         points.map { point -> point.transform(scaleFactor, postScaleOffset) }
-    }.getOrDefault(emptyList())
+    }.getOrDefault(emptyList()).also(onPointsUpdate)
 
     Canvas(modifier = modifier.onGloballyPositioned(::updateTransformation)) {
         val transformedPoints = points.transform()

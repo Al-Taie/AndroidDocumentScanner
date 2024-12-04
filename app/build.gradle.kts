@@ -50,6 +50,7 @@ android {
 
 kotlin {
     jvmToolchain(Version.JVM.majorVersion.toInt())
+    compilerOptions.freeCompilerArgs.add("-Xwhen-guards")
 }
 
 dependencies {
