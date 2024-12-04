@@ -107,6 +107,10 @@ publishing {
             from(components.findByName("java"))
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
+
+            groupId = "com.github.Al-Taie"
+            artifactId = "document_scanner_lib_android"
+            version = "1.0.9"
         }
     }
 }
