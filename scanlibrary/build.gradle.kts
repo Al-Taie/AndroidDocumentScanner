@@ -104,13 +104,13 @@ publishing {
 
     publications {
         register<MavenPublication>("release") {
-            from(components.findByName("java"))
+            from(components.findByName("release"))
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
 
             groupId = "com.github.Al-Taie"
             artifactId = "document_scanner_lib_android"
-            version = "1.0.9"
+            version = "1.0.10"
         }
     }
 }
