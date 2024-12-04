@@ -81,14 +81,31 @@ dependencies {
     implementation(libs.bundles.implementation.compose)
 }
 
+tasks.register<Jar>("sourcesJar") {
+    from(android.sourceSets["main"].java.srcDirs)
+    archiveClassifier.set("sources")
+}
+
+tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+}
+
 publishing {
     publications {
         register<MavenPublication>("release") {
-            afterEvaluate {
-                from(components["release"])
-                groupId = "com.github.Al-Taie"
-                artifactId = "document_scanner_lib_android"
-                version = "1.0.9"
+            from(components.findByName("java"))
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/Al-Taie/document_scanner_lib_android")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
             }
         }
     }
