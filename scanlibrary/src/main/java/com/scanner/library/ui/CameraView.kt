@@ -11,7 +11,9 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -23,57 +25,59 @@ import java.util.concurrent.Executors
 
 @Composable
 fun CameraView(
-    analyzer: Analyzer,
+    analyzer: Analyzer?,
     modifier: Modifier = Modifier,
     onPreviewViewUpdate: (PreviewView) -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-            val executor = ContextCompat.getMainExecutor(context)
-            val cameraProvider = cameraProviderFuture.get()
+    key(analyzer) {
+        AndroidView(
+            modifier = modifier,
+            factory = { context ->
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+                val executor = ContextCompat.getMainExecutor(context)
+                val cameraProvider = cameraProviderFuture.get()
 
-            PreviewView(context).apply {
-                implementationMode = PreviewView.ImplementationMode.PERFORMANCE
-                scaleType = PreviewView.ScaleType.FIT_CENTER
-            }.also { previewView ->
-                cameraProviderFuture.addListener(
-                    /* listener = */
-                    {
-                        val cameraSelector = CameraSelector.Builder()
-                            .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                            .build()
+                PreviewView(context).apply {
+                    implementationMode = PreviewView.ImplementationMode.PERFORMANCE
+                    scaleType = PreviewView.ScaleType.FIT_CENTER
+                }.also { previewView ->
+                    cameraProviderFuture.addListener(
+                        /* listener = */
+                        {
+                            val cameraSelector = CameraSelector.Builder()
+                                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                                .build()
 
-                        val useCaseGroup = getCameraConfigurations(
-                            analyzer = analyzer,
-                            previewView = previewView
-                        )
-
-                        runCatching {
-                            cameraProvider.unbindAll()
-                        }
-
-                        runCatching {
-                            cameraProvider.bindToLifecycle(
-                                /* lifecycleOwner = */ lifecycleOwner,
-                                /* cameraSelector = */ cameraSelector,
-                                /* useCaseGroup   = */ useCaseGroup
+                            val useCaseGroup = getCameraConfigurations(
+                                analyzer = analyzer,
+                                previewView = previewView
                             )
-                        }
-                    },
-                    /* executor = */ executor,
-                )
-            }.also(onPreviewViewUpdate)
-        },
-        update = onPreviewViewUpdate
-    )
+
+                            runCatching {
+                                cameraProvider.unbindAll()
+                            }
+
+                            runCatching {
+                                cameraProvider.bindToLifecycle(
+                                    /* lifecycleOwner = */ lifecycleOwner,
+                                    /* cameraSelector = */ cameraSelector,
+                                    /* useCaseGroup   = */ useCaseGroup
+                                )
+                            }
+                        },
+                        /* executor = */ executor,
+                    )
+                }.also(onPreviewViewUpdate)
+            },
+            update = onPreviewViewUpdate
+        )
+    }
 }
 
 
 private fun getCameraConfigurations(
-    analyzer: Analyzer,
+    analyzer: Analyzer?,
     previewView: PreviewView
 ): UseCaseGroup {
     val cameraExecutor = Executors.newSingleThreadExecutor()
@@ -91,8 +95,7 @@ private fun getCameraConfigurations(
         .setResolutionSelector(resolutionSelector)
         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
         .build()
-        .apply { setAnalyzer(cameraExecutor, analyzer) }
-        .apply { setAnalyzer(Dispatchers.IO.asExecutor(), analyzer) }
+        .apply { analyzer?.let { setAnalyzer(cameraExecutor, it) } }
 
     val preview = Preview.Builder()
         .setResolutionSelector(resolutionSelector)
