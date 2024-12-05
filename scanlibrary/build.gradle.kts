@@ -1,6 +1,8 @@
 import com.scanner.buildscr.AppConfig
 import com.scanner.buildscr.AppConfig.Version
+import org.gradle.internal.impldep.org.apache.sshd.common.util.io.IoUtils.buildPath
 import org.gradle.kotlin.dsl.implementation
+import org.gradle.language.nativeplatform.internal.Dimensions.applicationVariants
 
 plugins {
     alias(libs.plugins.android.library)
@@ -64,6 +66,13 @@ android {
 //    lint {
 //        abortOnError = false
 //    }
+
+    libraryVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "${AppConfig.Artifact.ID}-${AppConfig.Artifact.VERSION}-${buildType.name}.aar"
+        }
+    }
 }
 
 kotlin {
@@ -81,15 +90,6 @@ dependencies {
     implementation(libs.bundles.implementation.compose)
 }
 
-tasks.register<Jar>("sourcesJar") {
-    from(android.sourceSets["main"].java.srcDirs)
-    archiveClassifier.set("sources")
-}
-
-tasks.register<Jar>("javadocJar") {
-    archiveClassifier.set("javadoc")
-}
-
 publishing {
     repositories {
         maven {
@@ -104,13 +104,27 @@ publishing {
 
     publications {
         register<MavenPublication>("release") {
-            from(components.findByName("release"))
-            artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
-
-            groupId = "com.github.Al-Taie"
-            artifactId = "document_scanner_lib_android"
-            version = "1.0.10"
+            afterEvaluate {
+                groupId = AppConfig.Artifact.ID
+                version = AppConfig.Artifact.VERSION
+                artifactId = AppConfig.Artifact.GROUP_ID
+                val buildPath = "${layout.buildDirectory}/outputs"
+                from(components["release"])
+                artifact(tasks["sourcesJar"])
+                artifact(tasks["javadocJar"])
+                artifact("${buildPath}/aar/$artifactId-$version-release.aar")
+            }
         }
     }
+}
+
+tasks.register<Jar>("sourcesJar") {
+    from(android.sourceSets["main"].java.srcDirs)
+    archiveClassifier.set("sources")
+    archiveBaseName.set(AppConfig.Artifact.ID)
+}
+
+tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    archiveBaseName.set(AppConfig.Artifact.ID)
 }
