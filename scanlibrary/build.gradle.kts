@@ -108,11 +108,11 @@ publishing {
                 groupId = AppConfig.Artifact.ID
                 version = AppConfig.Artifact.VERSION
                 artifactId = AppConfig.Artifact.GROUP_ID
-                val buildPath = "${layout.buildDirectory}/outputs"
+                val buildPath = layout.buildDirectory.dir("/outputs/aar").toString()
                 from(components["release"])
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
-                artifact("${buildPath}/aar/$groupId-$version-release.aar")
+                artifact("${buildPath}/$groupId-$version-release.aar")
             }
         }
     }
