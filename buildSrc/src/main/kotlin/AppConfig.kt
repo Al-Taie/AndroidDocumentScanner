@@ -16,9 +16,16 @@ object AppConfig {
         const val NDK = "27.0.11902837"
     }
 
+    object Artifact {
+        const val ID = "document_scanner_lib_android"
+        const val GROUP_ID = "com.github.Al-Taie"
+        const val VERSION = "1.0.11"
+    }
+
     private const val GROUP_ID = "com.scanner"
     private const val APPLICATION_ID_SUFFIX = "app"
     private const val LIBRARY_ID_SUFFIX = "library"
+
     const val APPLICATION_ID = "${GROUP_ID}.${APPLICATION_ID_SUFFIX}"
     const val LIBRARY_ID = "${GROUP_ID}.${LIBRARY_ID_SUFFIX}"
     const val ANDROID_TEST_INSTRUMENTATION = "androidx.test.runner.AndroidJUnitRunner"
