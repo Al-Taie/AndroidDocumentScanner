@@ -65,6 +65,14 @@ android {
 //        abortOnError = false
 //    }
 
+    // Set the base name for the AAR
+    publishing {
+        singleVariant("release") {
+            withSourcesJar() // Includes sources JAR
+            withJavadocJar() // Includes Javadoc JAR
+        }
+    }
+
     libraryVariants.all {
         outputs.all {
             (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
@@ -106,10 +114,7 @@ publishing {
                 groupId = AppConfig.Artifact.GROUP_ID
                 version = AppConfig.Artifact.VERSION
                 artifactId = AppConfig.Artifact.ID
-                val aarFileProvider = layout.buildDirectory.file("outputs/aar/${artifactId}-${version}-release.aar")
-                artifact(tasks["sourcesJar"])
-                artifact(tasks["javadocJar"])
-                artifact(aarFileProvider.get().asFile)
+                from(components["release"])
             }
         }
     }
@@ -123,5 +128,6 @@ tasks.register<Jar>("sourcesJar") {
 
 tasks.register<Jar>("javadocJar") {
     archiveClassifier.set("javadoc")
+    from(tasks["dokkaHtml"]) // If using Dokka for documentation
     archiveBaseName.set(AppConfig.Artifact.ID)
 }
