@@ -19,7 +19,7 @@ object AppConfig {
     object Artifact {
         const val ID = "document_scanner_lib_android"
         const val GROUP_ID = "com.github.Al-Taie"
-        const val VERSION = "1.0.11"
+        const val VERSION = "1.0.12"
     }
 
     private const val GROUP_ID = "com.scanner"
