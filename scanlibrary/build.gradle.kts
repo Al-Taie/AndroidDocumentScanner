@@ -103,10 +103,10 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             afterEvaluate {
-                groupId = AppConfig.Artifact.ID
+                groupId = AppConfig.Artifact.GROUP_ID
                 version = AppConfig.Artifact.VERSION
-                artifactId = AppConfig.Artifact.GROUP_ID
-                val aarFileProvider = layout.buildDirectory.file("outputs/aar/${groupId}-${version}-release.aar")
+                artifactId = AppConfig.Artifact.ID
+                val aarFileProvider = layout.buildDirectory.file("outputs/aar/${artifactId}-${version}-release.aar")
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
                 artifact(aarFileProvider.get().asFile)
