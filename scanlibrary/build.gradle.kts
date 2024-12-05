@@ -1,8 +1,6 @@
 import com.scanner.buildscr.AppConfig
 import com.scanner.buildscr.AppConfig.Version
-import org.gradle.internal.impldep.org.apache.sshd.common.util.io.IoUtils.buildPath
 import org.gradle.kotlin.dsl.implementation
-import org.gradle.language.nativeplatform.internal.Dimensions.applicationVariants
 
 plugins {
     alias(libs.plugins.android.library)
@@ -108,11 +106,10 @@ publishing {
                 groupId = AppConfig.Artifact.ID
                 version = AppConfig.Artifact.VERSION
                 artifactId = AppConfig.Artifact.GROUP_ID
-                val buildPath = layout.buildDirectory.dir("/outputs/aar").toString()
-                from(components["release"])
+                val aarFileProvider = layout.buildDirectory.file("outputs/aar/${groupId}-${version}-release.aar")
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
-                artifact("${buildPath}/$groupId-$version-release.aar")
+                artifact(aarFileProvider.get().asFile)
             }
         }
     }
