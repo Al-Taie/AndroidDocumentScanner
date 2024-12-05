@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 import com.scanner.buildscr.AppConfig
 import com.scanner.buildscr.AppConfig.Version
 import org.gradle.kotlin.dsl.implementation
