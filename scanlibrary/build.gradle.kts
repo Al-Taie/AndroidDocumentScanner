@@ -112,7 +112,7 @@ publishing {
                 from(components["release"])
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
-                artifact("${buildPath}/aar/$artifactId-$version-release.aar")
+                artifact("${buildPath}/aar/$groupId-$version-release.aar")
             }
         }
     }
