@@ -70,7 +70,7 @@ vector<Point> sortPointsClockwise(const vector<Point> &points) {
   });
 
   auto [height, width] = getHeightAndWidth(sorted);
-  if (height / 2 > width) return vector<Point>();
+  if ((height / 2 > width) || (width / 2 > height)) return vector<Point>();
 
   return sorted;
 }
